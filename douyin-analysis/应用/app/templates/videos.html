@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Header -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <h2 class="text-2xl font-bold">视频列表</h2>
+    <div class="flex items-center space-x-3">
+        <input type="text" id="video-search"
+               class="search-input w-64" placeholder="🔍 搜索视频标题..."
+               oninput="searchVideos()">
+    </div>
+</div>
+
+<!-- Sort Buttons -->
+<div class="flex items-center space-x-2 mb-4">
+    <span class="text-sm text-gray-500">排序：</span>
+    <button class="sort-btn active" data-sort="plays" onclick="sortVideoList('plays')">
+        播放量 ↓
+    </button>
+    <button class="sort-btn" data-sort="engagement" onclick="sortVideoList('engagement')">
+        互动率 ↓
+    </button>
+    <button class="sort-btn" data-sort="latest" onclick="sortVideoList('latest')">
+        最新发布
+    </button>
+</div>
+
+<!-- Video Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="top-videos-table">
+            <thead>
+                <tr>
+                    <th class="w-12">#</th>
+                    <th>视频标题</th>
+                    <th>时长</th>
+                    <th>播放量</th>
+                    <th>点赞</th>
+                    <th>评论</th>
+                    <th>分享</th>
+                    <th>互动率</th>
+                </tr>
+            </thead>
+            <tbody id="video-list-tbody">
+                <tr><td colspan="8" class="text-center text-gray-400 py-8">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination info -->
+<div class="text-center text-sm text-gray-400 mt-4">
+    共展示 50 条视频数据
+</div>
+
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

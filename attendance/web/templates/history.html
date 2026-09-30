@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="page-title">📋 历史记录</h2>
+
+<!-- 筛选栏 -->
+<div class="panel">
+    <div class="panel-body">
+        <form class="filter-bar" method="get" action="/history">
+            <input type="time" name="view_time" id="histTime" value="{{ filters.view_time }}" style="min-width:120px;font-size:.85rem;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);" onchange="localStorage.setItem('lastCheckTime',this.value)">
+            <div class="dept-filter-wrap" style="position:relative;min-width:150px;">
+                <div class="dept-filter-btn" onclick="document.getElementById('deptDDH').classList.toggle('show')" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);font-size:.85rem;display:flex;justify-content:space-between;align-items:center;">
+                    <span id="deptFilterLabelH">全部部门</span><span>▼</span>
+                </div>
+                <div id="deptDDH" style="display:none;position:absolute;z-index:99;background:var(--surface);border:1px solid var(--border);border-radius:8px;max-height:400px;overflow-y:auto;min-width:200px;width:max-content;box-shadow:var(--shadow-lg);padding:8px;">
+                    <input type="text" placeholder="搜索..." style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.8rem;margin-bottom:4px;" oninput="var q=this.value.toLowerCase();document.querySelectorAll('.dept-label-h').forEach(l=>{l.style.display=q?l.textContent.toLowerCase().includes(q)?'block':'none':'block'})">
+                    <label style="display:block;padding:4px 8px;cursor:pointer;font-size:.85rem;"><input type="checkbox" class="dept-cb-all-h" onchange="var v=this.checked;document.querySelectorAll('.dept-cb-h').forEach(c=>c.checked=v);updateDeptFilterH()" checked> 全部</label>
+                    <hr style="margin:4px 0;">
+                    {% for did, dname in dept_options %}
+                    <label class="dept-label-h" style="display:block;padding:4px 8px;cursor:pointer;font-size:.85rem;"><input type="checkbox" class="dept-cb-h" value="{{ did }}" onchange="updateDeptFilterH()" checked> {{ dname }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+            <input type="hidden" name="department" id="histDept" value="">
+            <script>
+            function updateDeptFilterH(){
+                var allCb=document.querySelector('.dept-cb-all-h');
+                var cbs=document.querySelectorAll('.dept-cb-h');
+                var ids=[]; var names=[];
+                cbs.forEach(function(c){if(c.checked){ids.push(c.value);names.push(c.parentNode.textContent.trim())}});
+                document.getElementById('histDept').value=ids.join(',');
+                document.getElementById('deptFilterLabelH').textContent=ids.length===cbs.length?'全部部门':names.length?names.join(', '):'未选择';
+                if(allCb)allCb.checked=ids.length===cbs.length;
+            }
+            document.addEventListener('click',function(e){var wrap=e.target.closest('.dept-filter-wrap');if(!wrap)document.getElementById('deptDDH').classList.remove('show')});
+            </script>
+            <select name="status">
+                {% for val, label in status_options %}
+                <option value="{{ val }}" {{ 'selected' if filters.status==val else '' }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <input type="date" name="date_from" value="{{ filters.date_from }}" placeholder="开始日期">
+            <input type="date" name="date_to" value="{{ filters.date_to }}" placeholder="结束日期">
+            <button type="submit" class="btn btn-primary btn-sm">🔍 筛选</button>
+            <a href="/history" class="btn btn-outline btn-sm">重置</a>
+            <button type="button" class="btn btn-outline btn-sm" onclick="doExport()">📥 导出CSV</button>
+            <script>
+            function doExport(){
+                var s=document.getElementById('histTime').value;
+                var d=document.getElementById('histDept').value;
+                var f=document.querySelector('input[name=date_from]').value;
+                var t=document.querySelector('input[name=date_to]').value;
+                var cn=''; if(s){var h=parseInt(s.split(':')[0])||0; cn=h>=6&&h<12?'上午考勤':h>=12&&h<17?'中午考勤':h>=17?'晚上考勤':'';}
+                var u='/api/export-csv?';
+                if(cn) u+='class_name='+cn+'&';
+                if(d) u+='department='+d+'&';
+                if(f) u+='date_from='+f+'&';
+                if(t) u+='date_to='+t;
+                window.open(u,'_blank');
+            }
+            </script>
+            <script>(function(){var n=new Date();var ti=document.getElementById('histTime');if(ti&&!ti.value)ti.value=('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2);})();</script>
+        </form>
+    </div>
+</div>
+
+<!-- 记录表 -->
+<div class="panel">
+    <div class="panel-header">
+        <span>出勤记录</span>
+        <span class="text-muted">共 {{ total_records }} 条</span>
+    </div>
+    <div class="panel-body no-pad">
+        {% if records %}
+        <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>日期</th><th>时间段</th><th>学生</th><th>工号</th><th>部门</th><th>打卡</th><th>状态</th><th>备注</th></tr>
+            </thead>
+            <tbody>
+            {% for r in records %}
+            <tr>
+                <td>{{ r.class_date }}</td>
+                <td>{{ r.class_name }}</td>
+                <td>{{ r.student_name }}</td>
+                <td>{{ r.job_number }}</td>
+                <td>{{ r.department }}</td>
+                <td>{{ r.check_in_time }}</td>
+                <td><span class="badge {{ r.status }}">{{ r.label }}</span></td>
+                <td>
+                    {% if r.status in ('absent','makeup') %}
+                    <select onchange="setNote('{{ r.class_name }}','{{ r.student_user_id }}','{{ r.class_date }}',this.value)" style="font-size:.75rem;padding:2px 4px;border-radius:4px;border:1px solid var(--border);">
+                        <option value="">—</option>
+                        <option value="在宿舍待请假" {{ 'selected' if r.manual_note=='在宿舍待请假' else '' }}>待请假</option>
+                        <option value="忘记打卡已在教室" {{ 'selected' if r.manual_note=='忘记打卡已在教室' else '' }}>忘打卡</option>
+                        <option value="迟到已在教室" {{ 'selected' if r.manual_note=='迟到已在教室' else '' }}>已迟到</option>
+                    </select>
+                    {% elif r.manual_note %}
+                    <span style="font-size:.78rem;color:var(--muted);">{{ r.manual_note }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty"><div class="icon">📭</div><p>暂无符合条件的记录</p></div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function(){
+    const saved = localStorage.getItem('lastCheckDate');
+    if (saved) {
+        const df = document.querySelector('input[name="date_from"]');
+        if (df && !df.value) df.value = saved;
+    }
+})();
+</script>
+{% endblock %}

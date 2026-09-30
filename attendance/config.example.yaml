@@ -1,0 +1,36 @@
+# 画室自动考勤通知系统 — 配置模板
+# 使用前复制为 config.yaml 并填入真实值：cp config.example.yaml config.yaml
+# 切勿将真实密钥提交到公开仓库。
+
+dingtalk:
+  corp_id: "your_corp_id"          # 钉钉企业 CorpId
+  app_key: "your_app_key"          # 钉钉应用 AppKey
+  app_secret: "your_app_secret"    # 钉钉应用 AppSecret
+  agent_id: 0                      # 钉钉应用 AgentId
+
+# 部门 ID -> 班级名称 映射（示例，按你的钉钉通讯录配置）
+dept_labels:
+  1000000001: 示例班级A
+  1000000002: 示例班级B
+
+# 课表：上课后 notify_after_minutes 分钟自动触发考勤检查
+schedule:
+  - name: 上午
+    weekdays: [0, 1, 2, 3, 4, 5]
+    time: "08:20"
+    notify_after_minutes: 5
+    dept_ids: [1000000001, 1000000002]
+  - name: 下午
+    weekdays: [0, 1, 2, 3, 4, 5]
+    time: "13:50"
+    notify_after_minutes: 5
+    dept_ids: [1000000001, 1000000002]
+
+rules:
+  early_minutes: 30
+  late_grace_minutes: 5
+
+notify:
+  dingtalk_webhook: "https://oapi.dingtalk.com/robot/send?access_token=YOUR_ACCESS_TOKEN"
+  wecom_webhook: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_KEY"
+  serverchan_key: "SCT_YOUR_KEY"

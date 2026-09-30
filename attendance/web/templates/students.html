@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="page-title">👤 学生出勤统计</h2>
+
+<!-- 筛选栏 -->
+<div class="panel">
+    <div class="panel-body">
+        <form class="filter-bar" method="get" action="/students">
+            <input type="time" name="stu_time" id="stuTime" value="{{ filters.stu_time }}" style="min-width:120px;font-size:.85rem;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);" onchange="localStorage.setItem('lastCheckTime',this.value)">
+            <input type="text" id="deptSearch3" placeholder="搜索部门..." style="min-width:140px;font-size:.85rem;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);" oninput="filterDepts3()" onfocus="filterDepts3()" autocomplete="off">
+            <div id="deptDropdown3" style="display:none;position:absolute;z-index:99;background:var(--surface);border:1px solid var(--border);border-radius:8px;max-height:200px;overflow-y:auto;min-width:200px;box-shadow:var(--shadow-lg);"></div>
+            <input type="hidden" name="stu_dept" id="stuDept" value="{{ filters.stu_dept }}">
+            <script>
+            (function(){const n=new Date();document.getElementById('stuTime').value=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;})();
+            const allDepts3 = [{% for did, dname in dept_options %}{id:{{ did }},name:'{{ dname }}'},{% endfor %}];
+            function filterDepts3(){
+                const q=document.getElementById('deptSearch3').value.toLowerCase();
+                const dropdown=document.getElementById('deptDropdown3');
+                const filtered=q ? allDepts3.filter(d=>d.name.toLowerCase().includes(q)) : [];
+                dropdown.innerHTML = '<div style=\"padding:8px 12px;cursor:pointer;\" onclick=\"selectDept3(\"\",\"全部部门\")\"><b>全部部门</b></div>' +
+                    filtered.slice(0,30).map(d=>`<div style="padding:8px 12px;cursor:pointer;\" onclick=\"selectDept3('${d.id}','${d.name}')\">${d.name}</div>`).join('');
+                dropdown.style.display=filtered.length||!q?'block':'none';
+            }
+            function selectDept3(id,name){
+                document.getElementById('deptSearch3').value=name;
+                document.getElementById('stuDept').value=id;
+                document.getElementById('deptDropdown3').style.display='none';
+            }
+            document.addEventListener('click',e=>{if(!e.target.closest('#deptSearch3')&&!e.target.closest('#deptDropdown3'))document.getElementById('deptDropdown3').style.display='none';});
+            (function(){const v=document.getElementById('stuDept').value; if(v){const d=allDepts3.find(x=>x.id==parseInt(v)); if(d)document.getElementById('deptSearch3').value=d.name;}})();
+            </script>
+            <button type="submit" class="btn btn-primary btn-sm">🔍 筛选</button>
+            <a href="/students" class="btn btn-outline btn-sm">重置</a>
+        </form>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <span>学生列表</span>
+        <span class="text-muted">共 {{ total_students }} 人</span>
+    </div>
+    <div class="panel-body no-pad">
+        {% if students %}
+        <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>学生</th>
+                    <th>工号</th>
+                    <th>部门</th>
+                    <th>总课时</th>
+                    <th>✅ 出勤</th>
+                    <th>❌ 缺卡</th>
+                    <th>出勤率</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for s in students %}
+            <tr>
+                <td><strong>{{ s.name }}</strong></td>
+                <td>{{ s.job_number }}</td>
+                <td>{{ s.dept }}</td>
+                <td>{{ s.total }}</td>
+                <td>{{ s.on_time }}</td>
+                <td>{{ s.absent }}</td>
+                <td>
+                    <span class="badge {{ 'on_time' if s.rate >= 80 else 'late' if s.rate >= 60 else 'absent' }}">
+                        {{ s.rate }}%
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty"><div class="icon">👤</div><p>暂无学生数据，先触发一次出勤检查</p></div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

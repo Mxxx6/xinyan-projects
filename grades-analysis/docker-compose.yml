@@ -1,0 +1,16 @@
+services:
+  houyi-grades:
+    build: .
+    image: houyi-grades:latest
+    container_name: houyi-grades
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - TZ=Asia/Shanghai
+      - DATA_DB=/data/data.db
+    volumes:
+      - houyi_data:/data
+
+volumes:
+  houyi_data:

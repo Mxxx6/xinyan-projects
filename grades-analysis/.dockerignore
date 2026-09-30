@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+*.bat
+.dockerignore
+Dockerfile
+docker-compose.yml
+部署说明.md
+README.md

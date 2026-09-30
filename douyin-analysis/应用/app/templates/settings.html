@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="text-2xl font-bold mb-6">系统设置</h2>
+
+{% if saved %}
+<div class="flash-success">✅ 设置已保存！</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Mode Toggle -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold mb-4">运行模式</h3>
+
+        <form method="POST" action="/settings" class="settings-form">
+            <div class="mb-6">
+                <label class="flex items-center cursor-pointer">
+                    <div class="relative">
+                        <input type="checkbox" name="demo_mode" value="true"
+                               class="sr-only peer"
+                               {% if demo_mode %}checked{% endif %}
+                               onchange="this.form.elements['demo_mode_hidden'].value = this.checked ? 'true' : 'false'">
+                        <div class="block w-14 h-8 rounded-full bg-gray-300 peer-checked:bg-indigo-600
+                                    transition-colors"></div>
+                        <div class="dot absolute left-1 top-1 w-6 h-6 rounded-full bg-white
+                                    transition-transform peer-checked:translate-x-6"></div>
+                    </div>
+                    <div class="ml-4">
+                        <span class="text-sm font-medium text-gray-900">
+                            {% if demo_mode %}🟡 演示模式{% else %}🟢 实时模式{% endif %}
+                        </span>
+                        <p class="text-xs text-gray-500 mt-0.5">
+                            演示模式使用内置模拟数据，无需配置 API
+                        </p>
+                    </div>
+                </label>
+                <input type="hidden" name="demo_mode_hidden" value="{{ 'true' if demo_mode else 'false' }}">
+            </div>
+
+            <button type="submit"
+                    class="px-6 py-2 bg-indigo-600 text-white text-sm rounded-lg
+                           hover:bg-indigo-700 transition-colors">
+                保存设置
+            </button>
+        </form>
+    </div>
+
+    <!-- API Credentials -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold mb-4">抖音开放平台凭证</h3>
+
+        <form method="POST" action="/settings" class="settings-form">
+            <!-- Hidden demo_mode to preserve current value -->
+            <input type="hidden" name="demo_mode" value="{{ 'true' if demo_mode else 'false' }}">
+
+            <div class="mb-4">
+                <label>Client Key (应用 Key)</label>
+                <input type="password" name="client_key"
+                       placeholder="输入你的 Client Key"
+                       value="{{ settings.douyin_client_key if settings else '' }}">
+                <p class="text-xs text-gray-400 mt-1">在抖音开放平台创建应用后获取</p>
+            </div>
+
+            <div class="mb-4">
+                <label>Client Secret (应用 Secret)</label>
+                <input type="password" name="client_secret"
+                       placeholder="输入你的 Client Secret"
+                       value="{{ settings.douyin_client_secret if settings else '' }}">
+                <p class="text-xs text-gray-400 mt-1">请妥善保管，不要泄露</p>
+            </div>
+
+            <div class="mb-4">
+                <label>Redirect URI (回调地址)</label>
+                <input type="text" name="redirect_uri"
+                       placeholder="https://example.com/oauth/callback"
+                       value="{{ settings.douyin_redirect_uri if settings else '' }}">
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button type="submit"
+                        class="px-6 py-2 bg-indigo-600 text-white text-sm rounded-lg
+                               hover:bg-indigo-700 transition-colors">
+                    保存凭证
+                </button>
+                <span class="text-sm text-gray-500">
+                    {% if client_key_configured %}
+                    ✅ 已配置
+                    {% else %}
+                    ⚠️ 未配置
+                    {% endif %}
+                </span>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Cache Status -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+    <h3 class="text-lg font-semibold mb-4">缓存管理</h3>
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="text-sm text-gray-600">
+                缓存状态：
+                <span class="font-medium">{% if demo_mode %}演示数据（自动刷新）{% else %}最后更新于 --{% endif %}</span>
+            </p>
+            <p class="text-xs text-gray-400 mt-1">
+                缓存 TTL：{{ settings.cache_ttl_minutes if settings else 30 }} 分钟
+            </p>
+        </div>
+        <div class="flex space-x-3">
+            <button onclick="refreshData()"
+                    class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg
+                           hover:bg-gray-200 transition-colors">
+                🔄 刷新数据
+            </button>
+            <button onclick="if(confirm('确定清除所有缓存数据？')){fetch('/api/refresh',{method:'POST'}).then(r=>r.json()).then(d=>{alert(d.message);location.reload()})}"
+                    class="px-4 py-2 bg-red-50 text-red-600 text-sm rounded-lg
+                           hover:bg-red-100 transition-colors">
+                🗑 清除缓存
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- How to get credentials -->
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-6 mt-6">
+    <h3 class="text-lg font-semibold text-amber-900 mb-3">📖 如何获取抖音开放平台凭证？</h3>
+    <ol class="list-decimal list-inside space-y-2 text-sm text-amber-800">
+        <li>访问 <a href="https://open.douyin.com" target="_blank" class="text-blue-600 underline">抖音开放平台 (open.douyin.com)</a></li>
+        <li>注册开发者账号并完成企业认证</li>
+        <li>创建应用 → 选择「抖音」能力 → 获取 Client Key 和 Client Secret</li>
+        <li>配置 Redirect URI（回调地址）</li>
+        <li>将凭证填入左侧表单，关闭演示模式即可开始使用真实数据</li>
+    </ol>
+    <p class="text-xs text-amber-600 mt-3">
+        ⚠️ 注意：抖音开放平台需要企业资质认证。个人开发者可以一直使用演示模式体验完整功能。
+    </p>
+</div>
+
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

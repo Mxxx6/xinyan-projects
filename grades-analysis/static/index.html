@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>画室成绩分析系统</title>
+<script src="echarts.min.js"></script>
+<style>
+:root{--p:#1a73e8;--pl:#e8f0fe;--s:#0d9488;--w:#f59e0b;--d:#ef4444;--bg:#f0f2f5;--sf:#fff;--t:#1f2937;--tm:#6b7280;--bdr:#e5e7eb;--r:8px;--sh:0 1px 3px rgba(0,0,0,.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--t);display:flex;height:100vh;overflow:hidden}
+aside{width:220px;background:var(--sf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0}
+aside .logo{padding:20px;font-size:16px;font-weight:700;border-bottom:1px solid var(--bdr)}
+aside nav{flex:1;padding:8px 0;overflow-y:auto}
+aside nav .st{padding:14px 20px 6px;font-size:11px;color:var(--tm);font-weight:600;letter-spacing:1px}
+aside nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--t);text-decoration:none;font-size:13px;transition:.15s;border-left:3px solid transparent}
+aside nav a:hover,aside nav a.active{background:var(--pl);color:var(--p);border-left-color:var(--p)}
+main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+header{background:var(--sf);border-bottom:1px solid var(--bdr);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;font-size:14px}
+.content{flex:1;overflow-y:auto;padding:24px;display:none}.content.active{display:block}
+.sr{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.sc{background:var(--sf);border-radius:var(--r);padding:18px;box-shadow:var(--sh)}.sc .l{font-size:12px;color:var(--tm);margin-bottom:6px}.sc .v{font-size:26px;font-weight:700}
+.pn{background:var(--sf);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:20px}
+.pn-h{padding:14px 20px;border-bottom:1px solid var(--bdr);font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:space-between}
+.pn-b{padding:20px}
+select,input[type=text],input[type=date]{padding:6px 12px;border:1px solid var(--bdr);border-radius:4px;font-size:13px;background:var(--sf);color:var(--t)}input[type=date]{min-width:150px}
+select:focus,input:focus{outline:0;border-color:var(--p)}
+.ms-wrap{position:relative;min-width:150px}
+.ms-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 12px;border:1px solid var(--bdr);border-radius:4px;font-size:13px;background:var(--sf);color:var(--t);cursor:pointer;user-select:none;white-space:nowrap;max-width:260px}
+.ms-btn .ms-arrow{font-size:10px;color:var(--tm)}
+.ms-dd{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:99;background:var(--sf);border:1px solid var(--bdr);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:220px;max-height:320px;overflow-y:auto;padding:8px}
+.ms-search{width:100%;padding:6px 8px;margin-bottom:6px;border:1px solid var(--bdr);border-radius:4px;font-size:12px;box-sizing:border-box}
+.ms-item{display:block;padding:4px 6px;font-size:12px;cursor:pointer;border-radius:3px;white-space:nowrap}
+.ms-item:hover{background:var(--pl)}
+.ms-item input{margin-right:6px;vertical-align:middle}
+.ms-hr{border-top:1px solid var(--bdr);margin:6px 0}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;border:0;transition:.15s}
+.btn-p{background:var(--p);color:#fff}.btn-p:hover{opacity:.9}
+.btn-o{background:transparent;border:1px solid var(--bdr);color:var(--t)}
+.btn-sm{padding:4px 10px;font-size:11px}.btn:disabled{opacity:.5;cursor:not-allowed}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--bdr);white-space:nowrap}
+th{background:#f9fafb;font-weight:600;color:var(--tm);font-size:11px}
+tr:hover td{background:var(--pl)}
+.cr{display:grid;grid-template-columns:1fr 1fr;gap:16px}.cb{height:360px}
+.band{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:700;text-align:center}
+.bap{background:#dc2626;color:#fff}.ba{background:#f97316;color:#fff}.bam{background:#eab308;color:#1a1a1a}.bbp{background:#22c55e;color:#fff}.bb{background:#06b6d4;color:#fff}.bbm{background:#3b82f6;color:#fff}.bcp{background:#8b5cf6;color:#fff}.bc{background:#a855f7;color:#fff}.bcm{background:#d946ef;color:#fff}.bd{background:#6b7280;color:#fff}
+.aw{padding:12px 16px;border-radius:4px;margin:16px 0;font-size:13px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e}
+.cb2{display:flex;align-items:center;gap:12px;margin-top:16px;padding:16px;background:#fffbeb;border-radius:4px}
+.tst{position:fixed;top:20px;right:20px;z-index:9999;padding:12px 24px;border-radius:6px;color:#fff;font-size:14px;animation:si .3s}
+.ts{background:var(--s)}.te{background:var(--d)}@keyframes si{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.pt{font-size:18px;font-weight:700;margin-bottom:20px}.pt .sub{font-size:13px;color:var(--tm);font-weight:400}
+.ld{text-align:center;padding:40px;color:var(--tm)}.mt{font-size:12px;color:var(--tm);margin-top:8px}
+.pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:16px}
+.pagination button{padding:6px 12px;border:1px solid var(--bdr);border-radius:4px;background:var(--sf);cursor:pointer;font-size:12px}
+.pagination button.active{background:var(--p);color:#fff;border-color:var(--p)}
+.pagination span{font-size:12px;color:var(--tm)}
+.tabs{display:flex;gap:0;margin-bottom:16px}
+.tabs a{padding:8px 16px;border:1px solid var(--bdr);font-size:13px;cursor:pointer;background:var(--sf);color:var(--t);text-decoration:none}
+.tabs a:first-child{border-radius:4px 0 0 4px}.tabs a:last-child{border-radius:0 4px 4px 0}
+.tabs a.active{background:var(--p);color:#fff;border-color:var(--p)}
+@media(max-width:768px){aside{display:none}.cr{grid-template-columns:1fr}.sr{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<aside><div class="logo">画室成绩分析系统</div><nav>
+<div class="st">总览</div><a href="#" data-p="dashboard" class="active">教学看板</a>
+<div class="st">月考分析</div><a href="#" data-p="ranking">综合排名</a><a href="#" data-p="averages">均分统计</a><a href="#" data-p="bands">分数段 A+~D</a>
+<div class="st">联考</div><a href="#" data-p="joint">联考总览</a>
+<div class="st">管理</div><a href="#" data-p="import">数据导入</a><a href="#" data-p="groups">团体生</a><a href="#" data-p="transition">学届换届</a>
+</nav></aside>
+<main><header><span id="bc" style="color:var(--tm)">教学看板</span><span id="ui">未登录</span></header>
+
+<div id="page-dashboard" class="content active"><div class="pn" style="margin-bottom:20px"><div class="pn-h">筛选<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input type="date" id="dm" onchange="loadDashboard()"><div id="ds-studio"></div><div id="ds-class"></div><button class="btn btn-p" onclick="loadDashboard()">查询</button></div></div></div><div class="sr" id="ds"></div><div class="cr"><div class="pn"><div class="pn-h">工作室三科均分</div><div class="pn-b"><div id="c1" class="cb"></div></div></div><div class="pn"><div class="pn-h">教学指数</div><div class="pn-b"><div id="c2" class="cb"></div></div></div></div></div>
+
+<div id="page-ranking" class="content"><div class="pt">综合排名 <span class="sub">— Rank</span></div><div class="pn"><div class="pn-h">排名表<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input type="date" id="rm" onchange="loadRanking()"><select id="rprov" onchange="loadRanking()"><option value="">全部省份</option><option value="浙江省">浙江省</option><option value="非浙江省">非浙江省</option></select><div id="rs-ms"></div><input type="text" id="rname" placeholder="名字搜索" onkeydown="if(event.key==='Enter')loadRanking()"><button class="btn btn-p" onclick="loadRanking()">查询</button></div></div><div class="pn-b"><div id="rl" class="ld" style="display:none">加载中...</div><div id="re" class="ld" style="display:none">暂无数据</div><div id="rd" style="overflow-x:auto"><table id="rt"><thead><tr><th>排名</th><th>姓名</th><th>学号</th><th>工作室</th><th>省份</th><th>素描(档/分)</th><th>色彩(档/分)</th><th>速写(档/分)</th><th>总分</th></tr></thead><tbody></tbody></table></div><div class="pagination" id="rp"></div></div></div></div>
+
+<div id="page-averages" class="content"><div class="pt">均分统计</div><div class="pn"><div class="pn-h">均分<div style="display:flex;gap:8px"><select id="ag"><option value="studio">按工作室</option><option value="class">按班级</option></select><input type="date" id="am" onchange="loadAverages()"><button class="btn btn-p" onclick="loadAverages()">查询</button></div></div><div class="pn-b"><div id="al" class="ld">加载中...</div><div style="overflow-x:auto"><table id="at" style="display:none"><thead><tr><th>分组</th><th>人数</th><th>素描均分</th><th>色彩均分</th><th>速写均分</th><th>三科综合</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+<div id="page-bands" class="content"><div class="pt">分数段 <span class="sub">— A+~D 十档 9-0分</span></div><div class="pn"><div class="pn-h">档位定义</div><div class="pn-b"><table style="text-align:center"><thead><tr><th>档位</th><th>A+</th><th>A</th><th>A-</th><th>B+</th><th>B</th><th>B-</th><th>C+</th><th>C</th><th>C-</th><th>D</th></tr></thead><tbody><tr><td><b>分值</b></td><td><b>9</b></td><td><b>8</b></td><td><b>7</b></td><td><b>6</b></td><td><b>5</b></td><td><b>4</b></td><td><b>3</b></td><td><b>2</b></td><td><b>1</b></td><td><b>0</b></td></tr></tbody></table></div></div><div class="pn"><div class="pn-h">分数段堆叠图<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input type="date" id="bm" onchange="loadBands()"><select id="bs" onchange="loadBands()"><option value="sketch_score">素描</option><option value="color_score">色彩</option><option value="quick_score">速写</option></select><div id="bs-studio"></div><div id="bs-class"></div><button class="btn btn-p" onclick="loadBands()">查询</button></div></div><div class="pn-b"><div id="c3" style="height:400px"></div></div></div><div class="pn"><div class="pn-h">教学指数</div><div class="pn-b" style="overflow-x:auto"><table id="tt"><thead><tr><th>工作室</th><th>教学指数</th><th>A+</th><th>A</th><th>A-</th><th>B+</th><th>B</th><th>C及以下</th></tr></thead><tbody></tbody></table></div></div></div>
+
+<div id="page-joint" class="content"><div class="pt">联考总览 <span class="sub">— 本届各省模考</span></div><div class="pn"><div class="pn-h">联考排名<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input type="date" id="js" onchange="loadJoint()"><select id="jp" onchange="loadJoint()"><option value="">全部省份</option></select><div id="js-studio"></div><div id="js-class"></div><button class="btn btn-p" onclick="loadJoint()">查询</button></div></div><div class="pn-b"><div id="jl" class="ld" style="display:none">加载中...</div><div style="overflow-x:auto"><table id="jt"><thead><tr><th>排名</th><th>姓名</th><th>学号</th><th>省份</th><th>工作室</th><th>素描</th><th>色彩</th><th>速写</th><th>总分</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+<div id="page-groups" class="content"><div class="pt">团体生分析 <span class="sub">— 仅校长/管理员 | 人数≥5</span></div><div class="pn" style="margin-bottom:20px"><div class="pn-h">考试类型<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class="tabs"><a id="gtab-monthly" class="active" onclick="switchGroupType('monthly')">月考</a><a id="gtab-joint" onclick="switchGroupType('joint')">联考</a></div><input type="date" id="gs" onchange="loadGroups()"><button class="btn btn-p" onclick="loadGroups()">查询</button></div></div></div><div class="pn"><div class="pn-h">团体统计</div><div class="pn-b"><div id="gl" class="ld">加载中...</div><table id="gt" style="display:none"><thead><tr><th>团体名称</th><th>人数</th><th>素描均分</th><th>色彩均分</th><th>速写均分</th><th>三科综合</th></tr></thead><tbody></tbody></table></div></div></div>
+
+<div id="page-import" class="content"><div class="pt">数据导入</div><div class="cr"><div class="pn"><div class="pn-h">Excel</div><div class="pn-b" style="text-align:center;padding:40px"><p style="color:var(--tm);margin-bottom:16px">上传 .xlsx/.xls，字段与简道云一致</p><input type="file" accept=".xlsx,.xls" id="ef" style="display:none" onchange="handleExcel(this)"><button class="btn btn-p" onclick="document.getElementById('ef').click()">上传文件</button></div></div><div class="pn"><div class="pn-h">简道云</div><div class="pn-b" style="text-align:center;padding:40px"><p style="color:var(--tm);margin-bottom:16px">数据来自简道云，已本地落库；启动时自动同步，可手动刷新</p><button class="btn btn-p" onclick="refreshData()" id="br2">刷新数据</button><div id="sr2" style="margin-top:12px;font-size:13px"></div></div></div></div></div>
+
+<div id="page-transition" class="content"><div class="pt">学届换届</div><div class="pn" style="border-left:4px solid var(--p);max-width:600px"><div class="pn-h" style="color:var(--p)">换届操作</div><div class="pn-b"><p style="color:var(--tm);margin-bottom:20px">切换当前学届：后续数据实时从简道云按新学届拉取，无需本地归档</p><div><label style="font-size:13px">新届名称</label><br><input type="text" id="nt" placeholder="如: 28届" style="width:200px;margin-top:4px"></div><div class="cb2"><span>确认：</span><input type="text" id="cf" placeholder="输入'确认换届'" style="width:180px"><button class="btn btn-p" onclick="doMigrate()" id="mb">执行换届</button></div><div class="aw">换届后当前届次切换，简道云数据按新学届筛选。请先确认简道云中已存在新届数据。</div></div></div></div></main>
+
+<div id="tc"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

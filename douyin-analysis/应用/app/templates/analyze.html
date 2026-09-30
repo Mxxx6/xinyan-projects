@@ -1,0 +1,581 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="text-2xl font-bold mb-2">🔬 单条视频分析</h2>
+<p class="text-sm text-gray-500 mb-6">粘贴抖音视频数据，引擎自动输出诊断报告</p>
+
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <!-- Input Panel (2 cols) -->
+    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-200 mb-4">
+            <button class="tab-btn active px-4 py-2 text-sm font-medium border-b-2 border-indigo-600 text-indigo-600"
+                    data-tab="paste" onclick="switchTab('paste')">📋 快速粘贴</button>
+            <button class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                    data-tab="manual" onclick="switchTab('manual')">✏️ 手动填写</button>
+            <button class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                    data-tab="ocr" onclick="switchTab('ocr')">📸 截图识别</button>
+            <button class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                    data-tab="batch" onclick="switchTab('batch')">📦 批量导入</button>
+        </div>
+
+        <!-- TAB 1: Quick Paste -->
+        <div id="tab-paste" class="tab-content">
+            <p class="text-xs text-gray-400 mb-3">
+                从第三方工具（飞瓜/蝉妈妈/新抖）复制数据，直接粘贴，自动识别
+            </p>
+            <textarea id="paste-input" rows="5"
+                      placeholder="随便粘贴，支持这些格式：
+
+播放 248.3w  点赞 19.8w  评论 1.3w  分享 12.1w
+
+248.3w  19.8w  1.3w  12.1w  22s
+
+2483000  198000  13000  121000  22
+
+或直接粘贴CSV/Excel复制的整行数据"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+                             focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"></textarea>
+            <div class="flex gap-2 mt-2 mb-4">
+                <input type="text" id="paste-title" placeholder="视频标题（选填）"
+                       class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <input type="text" id="paste-tags" placeholder="标签（选填）"
+                       class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <div id="parse-preview" class="hidden mb-4 p-3 bg-gray-50 rounded-lg text-sm">
+                <div class="text-xs text-gray-500 mb-1">🔍 识别结果：</div>
+                <div class="grid grid-cols-2 gap-1 text-xs">
+                    <span>播放：<b id="pv-plays">-</b></span>
+                    <span>点赞：<b id="pv-likes">-</b></span>
+                    <span>评论：<b id="pv-comments">-</b></span>
+                    <span>分享：<b id="pv-shares">-</b></span>
+                    <span>时长：<b id="pv-duration">-</b>s</span>
+                    <span>粉丝：<b id="pv-followers">-</b></span>
+                </div>
+            </div>
+            <button onclick="parseAndAnalyze()"
+                    class="w-full py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg
+                           hover:bg-indigo-700 transition-colors shadow-sm">
+                ⚡ 一键分析
+            </button>
+        </div>
+
+        <!-- TAB 2: Manual -->
+        <div id="tab-manual" class="tab-content hidden">
+            <form id="analyze-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">视频标题</label>
+                    <input type="text" id="title" placeholder="例如：航天基地的鼠鼠爆率低？"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+                                  focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">👁 播放量</label>
+                        <input type="number" id="plays" placeholder="0" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+                                      focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">❤️ 点赞</label>
+                        <input type="number" id="likes" placeholder="0" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+                                      focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">💬 评论</label>
+                        <input type="number" id="comments" placeholder="0" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">↗️ 分享</label>
+                        <input type="number" id="shares" placeholder="0" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">⏱ 时长(秒)</label>
+                        <input type="number" id="duration" placeholder="15" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">👥 粉丝数（可选）</label>
+                    <input type="number" id="followers" placeholder="选填，用于计算赞粉比" min="0"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">🏷 话题标签</label>
+                    <input type="text" id="tags" placeholder="#三角洲行动 #猛攻剧场"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <button type="submit"
+                        class="w-full py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg
+                               hover:bg-indigo-700 transition-colors shadow-sm">
+                    ⚡ 开始分析
+                </button>
+            </form>
+        </div>
+
+        <!-- TAB 3: Screenshot OCR -->
+        <div id="tab-ocr" class="tab-content hidden">
+            <p class="text-xs text-gray-400 mb-3">
+                上传抖音截图，自动识别播放/点赞/评论/分享数据
+            </p>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer
+                        hover:border-indigo-400 hover:bg-indigo-50/30 transition-colors"
+                 id="ocr-dropzone"
+                 onclick="document.getElementById('ocr-file-input').click()">
+                <div class="text-4xl mb-2">📸</div>
+                <p class="text-sm text-gray-600">点击上传截图</p>
+                <p class="text-xs text-gray-400 mt-1">或拖拽图片到此处</p>
+                <input type="file" id="ocr-file-input" accept="image/*" class="hidden"
+                       onchange="handleOCRFile(this.files[0])">
+            </div>
+            <div id="ocr-preview" class="hidden mt-4">
+                <img id="ocr-img" class="w-full rounded-lg max-h-64 object-contain border">
+            </div>
+            <div id="ocr-status" class="mt-3 text-sm text-center"></div>
+            <button id="ocr-analyze-btn" onclick="ocrAndAnalyze()"
+                    class="w-full mt-3 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg
+                           hover:bg-indigo-700 transition-colors shadow-sm hidden">
+                ⚡ 识别并分析
+            </button>
+        </div>
+
+        <!-- TAB 4: Batch Import -->
+        <div id="tab-batch" class="tab-content hidden">
+            <p class="text-xs text-gray-400 mb-3">
+                从飞瓜/蝉妈妈等工具导出CSV，粘贴整列数据，一次分析多条视频
+            </p>
+            <textarea id="batch-input" rows="8"
+                      placeholder="每行一条视频，格式与快速粘贴相同：
+
+航天基地鼠鼠爆率  248.3w  19.8w  1.3w  12.1w  22s
+三角洲S9新赛季测评  120w  8.5w  2.1w  3.2w  35s
+..."
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+                             focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none font-mono"></textarea>
+            <button onclick="batchAnalyze()"
+                    class="w-full mt-3 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg
+                           hover:bg-indigo-700 transition-colors shadow-sm">
+                📊 批量分析
+            </button>
+            <div id="batch-results" class="mt-4 space-y-3"></div>
+        </div>
+    </div>
+
+    <!-- Result Panel (3 cols) -->
+    <div class="lg:col-span-3 bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+         id="result-panel">
+        <h3 class="text-base font-semibold mb-4">📊 分析报告</h3>
+
+        <!-- Empty state -->
+        <div id="result-empty" class="text-center py-16 text-gray-400">
+            <div class="text-5xl mb-4">📋</div>
+            <p class="text-sm">在左侧填入视频数据</p>
+            <p class="text-xs mt-1">点击「开始分析」查看诊断报告</p>
+        </div>
+
+        <!-- Results (hidden initially) -->
+        <div id="result-content" class="hidden">
+            <!-- Grade Badge -->
+            <div id="grade-badge" class="text-center mb-6"></div>
+
+            <!-- Core Metrics -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                <div class="text-center p-3 bg-gray-50 rounded-lg">
+                    <div class="text-xs text-gray-500">互动率</div>
+                    <div class="text-xl font-bold text-indigo-600" id="res-rate">-</div>
+                </div>
+                <div class="text-center p-3 bg-gray-50 rounded-lg">
+                    <div class="text-xs text-gray-500">点赞率</div>
+                    <div class="text-xl font-bold text-rose-500" id="res-like-rate">-</div>
+                </div>
+                <div class="text-center p-3 bg-gray-50 rounded-lg">
+                    <div class="text-xs text-gray-500">评论率</div>
+                    <div class="text-xl font-bold text-emerald-500" id="res-comment-rate">-</div>
+                </div>
+                <div class="text-center p-3 bg-gray-50 rounded-lg">
+                    <div class="text-xs text-gray-500">分享率</div>
+                    <div class="text-xl font-bold text-amber-500" id="res-share-rate">-</div>
+                </div>
+            </div>
+
+            <!-- Interaction Structure -->
+            <div class="mb-6">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2">互动结构</h4>
+                <div class="flex h-6 rounded-full overflow-hidden bg-gray-100">
+                    <div id="bar-likes" class="bg-rose-400 transition-all duration-500"
+                         style="width:0%"></div>
+                    <div id="bar-comments" class="bg-emerald-400 transition-all duration-500"
+                         style="width:0%"></div>
+                    <div id="bar-shares" class="bg-amber-400 transition-all duration-500"
+                         style="width:0%"></div>
+                </div>
+                <div class="flex text-xs text-gray-500 mt-1 gap-4">
+                    <span>🩷 点赞 <b id="res-like-pct">0%</b></span>
+                    <span>💚 评论 <b id="res-comment-pct">0%</b></span>
+                    <span>💛 分享 <b id="res-share-pct">0%</b></span>
+                </div>
+            </div>
+
+            <!-- Suggestions -->
+            <div class="mb-4">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2">💡 诊断建议</h4>
+                <div id="suggestions-list" class="space-y-2"></div>
+            </div>
+
+            <!-- Viral Factors -->
+            <div id="viral-section" class="mb-6">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2">🧬 爆款因子归因</h4>
+                <div id="overall-verdict" class="text-center px-4 py-2 rounded-lg text-sm font-bold mb-3"></div>
+                <div id="factors-list" class="space-y-3"></div>
+            </div>
+
+            <!-- Tags -->
+            <div id="tag-section" class="text-sm"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Tab switching ────────────────────────────────────────────────────
+function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active', 'border-indigo-600', 'text-indigo-600');
+        b.classList.add('border-transparent', 'text-gray-500');
+    });
+    const btn = document.querySelector(`[data-tab="${name}"]`);
+    btn.classList.add('active', 'border-indigo-600', 'text-indigo-600');
+    btn.classList.remove('border-transparent', 'text-gray-500');
+
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    document.getElementById('tab-' + name).classList.remove('hidden');
+}
+
+// ── Smart number parser ──────────────────────────────────────────────
+function parseNumber(s) {
+    if (!s || typeof s !== 'string') return null;
+    s = s.trim().toLowerCase().replace(/,/g, '');
+    if (s === '' || s === '-') return null;
+
+    // "12.1万" or "12.1w"
+    let m = s.match(/^([\d.]+)\s*[万w]$/);
+    if (m) return Math.round(parseFloat(m[1]) * 10000);
+
+    // "1.3亿" or "1.3e"
+    m = s.match(/^([\d.]+)\s*[亿e]$/);
+    if (m) return Math.round(parseFloat(m[1]) * 100000000);
+
+    // "1200000" or "1,200,000"
+    m = s.match(/^[\d.]+$/);
+    if (m) return parseInt(s, 10);
+
+    return null;
+}
+
+function smartParse(text) {
+    // Strip everything except numbers, 万/w, 亿, dots, and separators
+    // Extract all number-like tokens
+    const tokens = text.match(/[\d.]+[万w亿e]?/gi) || [];
+    const nums = tokens.map(t => parseNumber(t)).filter(n => n !== null);
+
+    // Try to assign: plays, likes, comments, shares, duration, followers
+    const result = { plays: 0, likes: 0, comments: 0, shares: 0, duration: 0, followers: 0 };
+
+    if (nums.length >= 4) {
+        // Assume order: plays, likes, comments, shares
+        result.plays = nums[0];
+        result.likes = nums[1];
+        result.comments = nums[2];
+        result.shares = nums[3];
+        if (nums.length >= 5) result.duration = nums[4];
+        if (nums.length >= 6) result.followers = nums[5];
+    } else if (nums.length >= 3) {
+        // No plays, assume: likes, comments, shares
+        result.likes = nums[0];
+        result.comments = nums[1];
+        result.shares = nums[2];
+    }
+
+    return result;
+}
+
+// ── Quick paste: live preview ────────────────────────────────────────
+document.getElementById('paste-input').addEventListener('input', function() {
+    const parsed = smartParse(this.value);
+    const pv = document.getElementById('parse-preview');
+    if (parsed.plays || parsed.likes) {
+        pv.classList.remove('hidden');
+        document.getElementById('pv-plays').textContent = parsed.plays ? parsed.plays.toLocaleString() : '未识别';
+        document.getElementById('pv-likes').textContent = parsed.likes ? parsed.likes.toLocaleString() : '未识别';
+        document.getElementById('pv-comments').textContent = parsed.comments ? parsed.comments.toLocaleString() : '未识别';
+        document.getElementById('pv-shares').textContent = parsed.shares ? parsed.shares.toLocaleString() : '未识别';
+        document.getElementById('pv-duration').textContent = parsed.duration || '未填';
+        document.getElementById('pv-followers').textContent = parsed.followers || '未填';
+    } else {
+        pv.classList.add('hidden');
+    }
+});
+
+// ── Parse and analyze ────────────────────────────────────────────────
+async function parseAndAnalyze() {
+    const raw = document.getElementById('paste-input').value.trim();
+    if (!raw) { alert('请先粘贴数据'); return; }
+
+    const parsed = smartParse(raw);
+    const data = {
+        title: document.getElementById('paste-title').value,
+        plays: parsed.plays,
+        likes: parsed.likes,
+        comments: parsed.comments,
+        shares: parsed.shares,
+        duration: parsed.duration,
+        followers: parsed.followers,
+        tags: document.getElementById('paste-tags').value,
+    };
+
+    if (!data.likes) { alert('无法识别数据，请检查格式。支持：120w 19.8w 1.3w 12.1w'); return; }
+
+    await runAnalysis(data);
+}
+
+// ── OCR upload & analyze ────────────────────────────────────────────
+let ocrImageData = null;
+
+function handleOCRFile(file) {
+    if (!file) return;
+    document.getElementById('ocr-status').innerHTML =
+        '<span class="text-indigo-600">图片已加载，点击下方按钮开始识别</span>';
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        ocrImageData = e.target.result;
+        document.getElementById('ocr-preview').classList.remove('hidden');
+        document.getElementById('ocr-img').src = ocrImageData;
+        document.getElementById('ocr-analyze-btn').classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+
+// Drag & drop
+(function() {
+    var dz = document.getElementById('ocr-dropzone');
+    if (!dz) return;
+    dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('border-indigo-400','bg-indigo-50/30'); });
+    dz.addEventListener('dragleave', function(e) { dz.classList.remove('border-indigo-400','bg-indigo-50/30'); });
+    dz.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dz.classList.remove('border-indigo-400','bg-indigo-50/30');
+        if (e.dataTransfer.files.length) handleOCRFile(e.dataTransfer.files[0]);
+    });
+})();
+
+async function ocrAndAnalyze() {
+    if (!ocrImageData) { alert('请先上传截图'); return; }
+    var status = document.getElementById('ocr-status');
+    status.innerHTML = '<span class="text-indigo-600">⏳ 识别中...</span>';
+
+    try {
+        var res = await fetch('/api/analyze/ocr', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({image_base64: ocrImageData}),
+        });
+        var r = await res.json();
+
+        if (r.error) {
+            status.innerHTML = '<span class="text-red-500">❌ ' + r.error + '</span>';
+            return;
+        }
+
+        status.innerHTML = '<span class="text-green-600">✅ 识别完成！播放=' + (r.plays||0).toLocaleString()
+            + ' 点赞=' + (r.likes||0).toLocaleString()
+            + ' 评论=' + (r.comments||0).toLocaleString()
+            + ' 分享=' + (r.shares||0).toLocaleString() + '</span>';
+
+        // Auto-fill and analyze
+        var data = {
+            title: r.title || '',
+            plays: r.plays || 0,
+            likes: r.likes || 0,
+            comments: r.comments || 0,
+            shares: r.shares || 0,
+            duration: r.duration || 0,
+            followers: 0,
+            tags: '',
+        };
+
+        if (data.likes) await runAnalysis(data);
+        else status.innerHTML += '<br><span class="text-amber-600">⚠️ 识别不完整，请切换到「快速粘贴」手动输入</span>';
+
+    } catch (e) {
+        status.innerHTML = '<span class="text-red-500">❌ OCR失败: ' + e.message + '</span>';
+    }
+}
+
+// ── Batch analyze ────────────────────────────────────────────────────
+async function batchAnalyze() {
+    const raw = document.getElementById('batch-input').value.trim();
+    if (!raw) { alert('请先粘贴批量数据'); return; }
+
+    const lines = raw.split('\n').filter(l => l.trim());
+    const results = document.getElementById('batch-results');
+    results.innerHTML = '<p class="text-sm text-gray-500">分析中...</p>';
+
+    const analyses = [];
+    for (const line of lines) {
+        const parsed = smartParse(line);
+        // Extract title: first part before numbers
+        const titleMatch = line.match(/^([^\d]+?)\s*\d/);
+        const title = titleMatch ? titleMatch[1].trim() : '';
+
+        const data = {
+            title: title,
+            plays: parsed.plays,
+            likes: parsed.likes,
+            comments: parsed.comments,
+            shares: parsed.shares,
+            duration: parsed.duration,
+            followers: parsed.followers,
+            tags: '',
+        };
+
+        if (!data.likes) continue;
+
+        try {
+            const res = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+            });
+            analyses.push(await res.json());
+        } catch (e) {}
+    }
+
+    // Render batch results
+    results.innerHTML = analyses.map((r, i) => {
+        const vf = r.viral_factors;
+        return `
+        <div class="p-4 border rounded-lg ${i === 0 ? 'border-indigo-300 bg-indigo-50/30' : 'border-gray-200'}">
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold text-sm">${i+1}. ${r.title || '未命名'}</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-bold text-white"
+                      style="background:${r.computed.grade_color}">${r.computed.grade.split('·')[0]}</span>
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-xs text-gray-600 mb-2">
+                <span>互动率 <b>${r.computed.interaction_rate}%</b></span>
+                <span>播放 <b>${r.core_metrics.plays.toLocaleString()}</b></span>
+                <span>${vf.factors[0].icon} 钩子 <b>${vf.factors[0].score}分</b></span>
+                <span>💰 社交 <b>${vf.factors[1].score}分</b></span>
+            </div>
+            <p class="text-xs text-gray-500">${vf.verdict}</p>
+        </div>`;
+    }).join('');
+}
+
+// ── Shared analysis runner ───────────────────────────────────────────
+async function runAnalysis(data) {
+    const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    const r = await res.json();
+    renderResult(r);
+}
+
+// ── Manual form handler ──────────────────────────────────────────────
+document.getElementById('analyze-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const data = {
+        title: document.getElementById('title').value,
+        plays: parseInt(document.getElementById('plays').value) || 0,
+        likes: parseInt(document.getElementById('likes').value) || 0,
+        comments: parseInt(document.getElementById('comments').value) || 0,
+        shares: parseInt(document.getElementById('shares').value) || 0,
+        duration: parseInt(document.getElementById('duration').value) || 0,
+        followers: parseInt(document.getElementById('followers').value) || 0,
+        tags: document.getElementById('tags').value,
+    };
+
+    if (!data.likes) {
+        alert('点赞为必填项');
+        return;
+    }
+
+    await runAnalysis(data);
+});
+
+// ── Result renderer ──────────────────────────────────────────────────
+function renderResult(r) {
+    document.getElementById('result-empty').classList.add('hidden');
+    document.getElementById('result-content').classList.remove('hidden');
+
+    document.getElementById('grade-badge').innerHTML =
+        '<span class="inline-block px-6 py-2 rounded-full text-lg font-bold text-white"'
+        + ' style="background:' + r.computed.grade_color + '">' + r.computed.grade + '</span>'
+        + '<p class="text-xs text-gray-400 mt-1">' + r.title + '</p>';
+
+    document.getElementById('res-rate').textContent = r.computed.interaction_rate + '%';
+    document.getElementById('res-like-rate').textContent = r.computed.like_rate + '%';
+    document.getElementById('res-comment-rate').textContent = r.computed.comment_rate + '%';
+    document.getElementById('res-share-rate').textContent = r.computed.share_rate + '%';
+
+    document.getElementById('bar-likes').style.width = r.interaction_structure.like_pct + '%';
+    document.getElementById('bar-comments').style.width = r.interaction_structure.comment_pct + '%';
+    document.getElementById('bar-shares').style.width = r.interaction_structure.share_pct + '%';
+    document.getElementById('res-like-pct').textContent = r.interaction_structure.like_pct + '%';
+    document.getElementById('res-comment-pct').textContent = r.interaction_structure.comment_pct + '%';
+    document.getElementById('res-share-pct').textContent = r.interaction_structure.share_pct + '%';
+
+    var sugList = document.getElementById('suggestions-list');
+    sugList.innerHTML = r.suggestions.map(function(s) {
+        var isNeg = s.indexOf('⚠️')===0 || s.indexOf('🔴')===0 || s.indexOf('🟡')===0 || s.indexOf('📉')===0;
+        var bg = isNeg ? 'bg-red-50 border-red-200 text-red-800'
+               : (s.indexOf('✅')===0 || s.indexOf('🔥')===0) ? 'bg-green-50 border-green-200 text-green-800'
+               : 'bg-gray-50 border-gray-200 text-gray-700';
+        return '<div class="px-3 py-2 rounded-lg border text-sm ' + bg + '">' + s + '</div>';
+    }).join('');
+
+    if (r.fan_conversion !== null) {
+        sugList.innerHTML += '<div class="px-3 py-2 rounded-lg border text-sm bg-blue-50 border-blue-200 text-blue-800">赞粉比：'
+            + r.fan_conversion + '% ' + (r.fan_conversion > 20 ? '(明显出圈)' : r.fan_conversion < 1 ? '(粉丝触达低)' : '(正常范围)') + '</div>';
+    }
+
+    if (r.viral_factors) {
+        var vf = r.viral_factors;
+        document.getElementById('overall-verdict').innerHTML =
+            '<span style="font-size:1.1em">综合评分：<b style="font-size:1.3em;color:#6366f1">'
+            + vf.overall_score + '/100</b></span> <span class="text-gray-600"> — ' + vf.verdict + '</span>';
+
+        document.getElementById('factors-list').innerHTML = vf.factors.map(function(f) {
+            return '<div class="p-4 rounded-lg border transition-all" style="border-left:4px solid hsl(' + f.score + ',70%,50%)">'
+                + '<div class="flex items-center justify-between mb-2">'
+                + '<span class="font-semibold text-sm">' + f.icon + ' ' + f.name + '</span>'
+                + '<span class="text-sm font-bold" style="color:hsl(' + f.score + ',70%,45%)">' + f.score + '分</span>'
+                + '</div>'
+                + '<div class="h-1.5 bg-gray-100 rounded-full mb-2 overflow-hidden">'
+                + '<div class="h-full rounded-full transition-all duration-700" style="width:' + f.score + '%;background:linear-gradient(90deg,hsl(' + f.score + ',70%,60%),hsl(' + f.score + ',70%,40%))"></div>'
+                + '</div>'
+                + '<p class="text-sm text-gray-600 mb-2">' + f.summary + '</p>'
+                + '<details class="text-xs"><summary class="text-indigo-600 cursor-pointer hover:underline">💡 你怎么借鉴？</summary>'
+                + '<p class="mt-1 text-gray-500 bg-indigo-50 p-2 rounded">' + f.what_to_learn + '</p></details>'
+                + '</div>';
+        }).join('');
+    }
+
+    if (r.tag_analysis.tags.length > 0) {
+        document.getElementById('tag-section').innerHTML =
+            '<h4 class="text-sm font-semibold text-gray-700 mb-2">🏷 标签分析</h4>'
+            + '<div class="flex flex-wrap gap-1 mb-2">'
+            + r.tag_analysis.tags.map(function(t) { return '<span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-xs">#' + t + '</span>'; }).join('')
+            + '</div>'
+            + '<p class="text-xs text-gray-500">' + r.tag_analysis.advice + '</p>';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="page-title">⚙️ 设置</h2>
+
+<!-- 手动触发面板 -->
+<div class="panel">
+    <div class="panel-header">▶️ 手动出勤检查</div>
+    <div class="panel-body">
+        <div class="filter-bar" style="align-items:end;">
+            <div>
+                <label class="text-muted" style="display:block;margin-bottom:4px;">日期</label>
+                <input type="date" id="checkDate" style="min-width:150px;">
+            </div>
+            <div>
+                <label class="text-muted" style="display:block;margin-bottom:4px;">考勤时间</label>
+                <input type="time" id="checkTime" style="min-width:120px;" value="08:20">
+            </div>
+            <div>
+                <label class="text-muted" style="display:block;margin-bottom:4px;">部门（可多选）</label>
+                <div class="dept-filter-wrap" style="position:relative;min-width:150px;">
+                    <div class="dept-filter-btn" onclick="document.getElementById('deptDD').classList.toggle('show')" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);font-size:.85rem;display:flex;justify-content:space-between;align-items:center;">
+                        <span id="deptFilterLabel">全部部门</span><span>▼</span>
+                    </div>
+                    <div id="deptDD" style="display:none;position:absolute;z-index:99;background:var(--surface);border:1px solid var(--border);border-radius:8px;max-height:400px;overflow-y:auto;min-width:200px;width:max-content;box-shadow:var(--shadow-lg);padding:8px;">
+                        <input type="text" placeholder="搜索..." style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.8rem;margin-bottom:4px;" oninput="var q=this.value.toLowerCase();document.querySelectorAll('.dept-label').forEach(l=>{l.style.display=q?l.textContent.toLowerCase().includes(q)?'block':'none':'block'})">
+                        <label style="display:block;padding:4px 8px;cursor:pointer;font-size:.85rem;"><input type="checkbox" class="dept-cb-all" onchange="var v=this.checked;document.querySelectorAll('.dept-cb').forEach(c=>c.checked=v);updateDeptFilter()" checked> 全部</label>
+                        <hr style="margin:4px 0;">
+                        {% for did, dname in dept_options %}
+                        <label class="dept-label" style="display:block;padding:4px 8px;cursor:pointer;font-size:.85rem;"><input type="checkbox" class="dept-cb" value="{{ did }}" onchange="updateDeptFilter()" checked> {{ dname }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <input type="hidden" id="checkDept" value="">
+                <script>
+                function updateDeptFilter(){
+                    var allCb=document.querySelector('.dept-cb-all');
+                    var cbs=document.querySelectorAll('.dept-cb');
+                    var ids=[]; var names=[];
+                    cbs.forEach(function(c){if(c.checked){ids.push(c.value);names.push(c.parentNode.textContent.trim())}});
+                    document.getElementById('checkDept').value=ids.join(',');
+                    document.getElementById('deptFilterLabel').textContent=ids.length===cbs.length?'全部部门':names.length?names.join(', '):'未选择';
+                    if(allCb)allCb.checked=ids.length===cbs.length;
+                }
+                document.addEventListener('click',function(e){var wrap=e.target.closest('.dept-filter-wrap');if(!wrap)document.getElementById('deptDD').classList.remove('show')});
+                </script>
+            </div>
+            <button class="btn btn-primary" onclick="manualCheck()">▶️ 执行检查</button>
+        </div>
+        <p class="text-muted mt-2">日期默认今天，可回溯历史日期。部门默认全选。</p>
+    </div>
+</div>
+
+<!-- 课表 -->
+<div class="panel">
+    <div class="panel-header">📋 课表配置 <span class="text-muted">(config.yaml)</span></div>
+    <div class="panel-body no-pad">
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>课程</th><th>星期</th><th>时间</th><th>部门</th><th>通知延迟</th></tr></thead>
+            <tbody>
+            {% for s in schedules %}
+            <tr>
+                <td><strong>{{ s.name }}</strong></td>
+                <td>{{ s.weekday_label }}</td>
+                <td>{{ s.time }}</td>
+                <td>
+                    {% for did in s.get('dept_ids', []) %}
+                    <span class="badge on_time">{{ dept_labels.get(did, '部门'+did|string) }}</span>
+                    {% endfor %}
+                </td>
+                <td>上课后 {{ s.notify_after_minutes }} 分钟</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<!-- 通知渠道 -->
+<div class="panel">
+    <div class="panel-header">📡 通知渠道</div>
+    <div class="panel-body no-pad">
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>渠道</th><th>状态</th><th>说明</th></tr></thead>
+            <tbody>
+                <tr><td>🤖 钉钉群机器人</td><td><span class="badge on_time">✅ 已配置</span></td><td class="text-muted">当前 Mock 模式，消息打印到控制台</td></tr>
+                <tr><td>💬 企业微信机器人</td><td><span class="badge on_time">✅ 已配置</span></td><td class="text-muted">当前 Mock 模式，消息打印到控制台</td></tr>
+                <tr><td>📱 Server酱 (微信)</td><td><span class="badge on_time">✅ 已配置</span></td><td class="text-muted">当前 Mock 模式，消息打印到控制台</td></tr>
+            </tbody>
+        </table>
+        </div>
+        <p class="text-muted mt-4">💡 将 config.yaml 中的 webhook/key 替换为真实地址即可启用实际推送</p>
+    </div>
+</div>
+
+<!-- 数据管理 -->
+<div class="panel" style="border-color: var(--red);">
+    <div class="panel-header" style="color: var(--red);">🗑️ 数据管理</div>
+    <div class="panel-body">
+        <p class="text-muted mb-4">清空所有考勤记录和通知日志。此操作不可恢复。</p>
+        <button class="btn btn-danger" onclick="resetData()">🗑️ 重置所有数据</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// 设置默认日期为今天
+document.getElementById('checkDate').value = new Date().toISOString().split('T')[0];
+
+const timeInput = document.getElementById('checkTime');
+const now = new Date();
+const h = now.getHours(), m = now.getMinutes();
+timeInput.value = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+
+async function manualCheck(){
+    const date = document.getElementById('checkDate').value;
+    const checkTime = document.getElementById('checkTime').value;
+    const deptId = document.getElementById('checkDept').value;
+
+    const btn = event.target;
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span style="animation:spin .8s linear infinite">⏳</span> 检查中...';
+
+    try {
+        const params = new URLSearchParams({check_date: date, check_time: checkTime});
+        if (deptId) params.set('dept_ids', deptId);
+        const r = await fetch(`/api/trigger-check?${params}`);
+        const d = await r.json();
+        if (d.ok) {
+            showToast(`✅ ${checkTime} (${date}) 检查完成！`);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast(`❌ ${d.error}`);
+        }
+    } catch(e) {
+        showToast('❌ 请求失败');
+    }
+    btn.disabled = false;
+    btn.innerHTML = orig;
+}
+</script>
+{% endblock %}

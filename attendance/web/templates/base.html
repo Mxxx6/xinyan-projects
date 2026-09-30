@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 画室考勤系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #f1f5f9; --surface: #ffffff; --text: #1e293b;
+            --muted: #64748b; --border: #e2e8f0;
+            --primary: #4f46e5; --primary-light: #e0e7ff;
+            --green: #10b981; --green-bg: #d1fae5;
+            --red: #ef4444; --red-bg: #fee2e2;
+            --amber: #f59e0b; --amber-bg: #fef3c7;
+            --purple: #8b5cf6; --purple-bg: #ede9fe;
+            --radius: 14px; --radius-sm: 8px;
+            --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,.08);
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a; --surface: #1e293b; --text: #e2e8f0;
+            --muted: #94a3b8; --border: #334155;
+            --primary: #818cf8; --primary-light: #1e1b4b;
+            --shadow: 0 1px 3px rgba(0,0,0,.3);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,.4);
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh;
+            transition: background .3s, color .3s;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: var(--surface); border-bottom: 1px solid var(--border);
+            padding: 0 24px; display: flex; align-items: center; height: 64px;
+            position: sticky; top:0; z-index:100; gap: 8px;
+            box-shadow: var(--shadow);
+        }
+        .navbar .logo { font-size:1.2rem; font-weight:700; white-space:nowrap; }
+        .navbar nav { display:flex; gap:2px; flex:1; overflow-x:auto; }
+        .navbar nav a {
+            text-decoration:none; color:var(--muted); padding:8px 16px;
+            border-radius:8px; font-weight:500; font-size:.9rem; white-space:nowrap;
+            transition:all .15s;
+        }
+        .navbar nav a:hover { background:var(--primary-light); color:var(--primary); }
+        .navbar nav a.active { background:var(--primary); color:#fff; }
+        .nav-actions { display:flex; align-items:center; gap:8px; }
+        .theme-btn {
+            width:38px; height:38px; border-radius:50%; border:1px solid var(--border);
+            background:var(--surface); cursor:pointer; font-size:1.1rem;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .hamburger { display:none; background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text); }
+
+        /* Main */
+        .main { max-width:1200px; margin:0 auto; padding:28px 24px; }
+        .page-title { font-size:1.5rem; font-weight:700; margin-bottom:24px; }
+
+        /* Stats Grid */
+        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px; margin-bottom:28px; }
+        .stat-card {
+            background:var(--surface); border-radius:var(--radius); padding:20px 24px;
+            border:1px solid var(--border); box-shadow:var(--shadow);
+            display:flex; align-items:center; gap:16px;
+        }
+        .stat-card .icon { font-size:2rem; width:48px; height:48px; display:flex; align-items:center; justify-content:center; border-radius:12px; }
+        .stat-card .icon.blue { background:var(--primary-light); }
+        .stat-card .icon.green { background:var(--green-bg); }
+        .stat-card .icon.amber { background:var(--amber-bg); }
+        .stat-card .icon.red { background:var(--red-bg); }
+        .stat-card .info .value { font-size:1.8rem; font-weight:700; line-height:1.2; }
+        .stat-card .info .label { font-size:.8rem; color:var(--muted); }
+
+        /* Panels */
+        .panel { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); box-shadow:var(--shadow); margin-bottom:24px; }
+        .panel-header { padding:16px 24px; border-bottom:1px solid var(--border); font-weight:600; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+        .panel-body { padding:24px; overflow:visible; }
+        .panel-body.no-pad { padding:0; }
+
+        /* Charts row */
+        .charts-row { display:grid; grid-template-columns:2fr 1fr; gap:24px; margin-bottom:28px; }
+        @media (max-width:768px) { .charts-row { grid-template-columns:1fr; } }
+
+        /* Table */
+        .table-wrap { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; font-size:.9rem; }
+        th, td { padding:11px 16px; text-align:left; border-bottom:1px solid var(--border); }
+        th { font-size:.75rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; background:var(--bg); white-space:nowrap; }
+        tr:hover td { background:var(--primary-light); transition:background .15s; }
+
+        /* Badges */
+        .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.78rem; font-weight:600; white-space:nowrap; }
+        .badge.on_time { background:var(--green-bg); color:#065f46; }
+        .badge.late { background:var(--amber-bg); color:#92400e; }
+        .badge.late_long { background:#fed7aa; color:#9a3412; }
+        .badge.leave { background:var(--purple-bg); color:#6b21a8; }
+        .badge.makeup { background:var(--amber-bg); color:#92400e; }
+        .badge.leave_out { background:#fed7aa; color:#9a3412; }
+        .badge.leave_in { background:var(--purple-bg); color:#6b21a8; }
+        .badge.absent { background:var(--red-bg); color:#991b1b; }
+
+        /* Buttons */
+        .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 18px; border-radius:var(--radius-sm); font-size:.88rem; font-weight:500; cursor:pointer; border:none; transition:all .15s; text-decoration:none; white-space:nowrap; }
+        .btn-primary { background:var(--primary); color:#fff; }
+        .btn-primary:hover { opacity:.9; transform:translateY(-1px); }
+        .btn-outline { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+        .btn-outline:hover { background:var(--bg); }
+        .btn-danger { background:var(--red); color:#fff; }
+        .btn-sm { padding:5px 12px; font-size:.78rem; }
+        .btn:disabled { opacity:.5; cursor:not-allowed; }
+
+        /* Forms */
+        .filter-bar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; overflow:visible; }
+        .filter-bar select, .filter-bar input {
+            padding:8px 12px; border:1px solid var(--border); border-radius:var(--radius-sm);
+            font-size:.85rem; background:var(--surface); color:var(--text);
+            min-width:120px;
+        }
+
+        /* Report box */
+        .report-box { background:#1e1e2e; color:#cdd6f4; font-family:"SF Mono",monospace; font-size:.82rem; padding:20px 24px; border-radius:var(--radius-sm); white-space:pre-wrap; line-height:1.8; }
+
+        /* Toast */
+        .toast { position:fixed; top:80px; right:24px; background:#1e293b; color:#fff; padding:14px 24px; border-radius:var(--radius-sm); font-weight:500; z-index:999; animation:slideIn .3s ease; box-shadow:var(--shadow-lg); }
+        @keyframes slideIn { from{transform:translateX(120%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+        /* Empty */
+        .empty { text-align:center; padding:48px 24px; color:var(--muted); }
+        .empty .icon { font-size:3rem; margin-bottom:12px; }
+
+        /* Mobile */
+        @media (max-width:768px) {
+            .navbar nav { display:none; position:absolute; top:64px; left:0; right:0; background:var(--surface); flex-direction:column; border-bottom:1px solid var(--border); padding:8px; }
+            .navbar nav.open { display:flex; }
+            .hamburger { display:block; }
+            .main { padding:16px; }
+            .stats-grid { grid-template-columns:repeat(2,1fr); }
+        }
+
+        .text-muted { color:var(--muted); font-size:.85rem; }
+        .mt-2 { margin-top:8px; } .mt-4 { margin-top:16px; } .mb-4 { margin-bottom:16px; }
+        .show { display:block !important; }
+        .dept-filter-wrap { overflow:visible !important; }
+        .dept-filter-wrap .dept-filter-btn { cursor:pointer; user-select:none; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <button class="hamburger" onclick="document.querySelector('.navbar nav').classList.toggle('open')">☰</button>
+        <div class="logo">🎨 画室考勤</div>
+        <nav>
+            <a href="/" class="{{ 'active' if active_page=='dashboard' else '' }}">📊 仪表盘</a>
+            <a href="/history" class="{{ 'active' if active_page=='history' else '' }}">📋 历史记录</a>
+            <a href="/students" class="{{ 'active' if active_page=='students' else '' }}">👤 学生统计</a>
+            <a href="/schedule" class="{{ 'active' if active_page=='schedule' else '' }}">⚙️ 设置</a>
+        </nav>
+        <div class="nav-actions">
+            <button class="theme-btn" onclick="toggleTheme()" title="切换主题">🌓</button>
+        </div>
+    </div>
+    <div class="main">{% block content %}{% endblock %}</div>
+
+    <script>
+        // Theme toggle
+        (function(){const t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);})();
+        function toggleTheme(){const c=document.documentElement.getAttribute('data-theme');const n=c==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('theme',n);}
+
+        function showToast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
+
+        async function triggerCheck(className, btn){
+            btn=btn||event.target;btn.disabled=true;const orig=btn.innerHTML;
+            btn.innerHTML='<span style="display:inline-block;animation:spin .8s linear infinite">⏳</span> 检查中...';
+            try{
+                const r=await fetch(`/api/trigger-check?class_name=${encodeURIComponent(className)}`);
+                const d=await r.json();
+                if(d.ok){showToast(`✅ ${className} 出勤检查完成！`);setTimeout(()=>location.reload(),1500);}
+                else showToast(`❌ ${d.error}`);
+            }catch(e){showToast(`❌ 请求失败`);}
+            btn.disabled=false;btn.innerHTML=orig;
+        }
+
+        async function markLeave(class_name, user_id, btn, check_date){
+            btn.disabled=true;
+            const dateParam = check_date || '';
+            try{
+                const r=await fetch(`/api/mark-leave?class_name=${encodeURIComponent(class_name)}&student_user_id=${encodeURIComponent(user_id)}&check_date=${encodeURIComponent(dateParam)}`,{method:'POST'});
+                const d=await r.json();
+                if(d.ok){
+                    const msg = d.new_status==='leave' ? '📝 已标记请假' : '↩️ 已取消请假';
+                    showToast(msg);
+                    setTimeout(()=>location.reload(),800);
+                }
+                else showToast(`❌ ${d.error}`);
+            }catch(e){showToast('❌ 请求失败');}
+            btn.disabled=false;
+        }
+
+        async function setNote(class_name, user_id, check_date, note){
+            try{
+                const mt=document.getElementById('mt_'+user_id);
+                const makeup=mt ? mt.value : '';
+                const r=await fetch(`/api/set-note?class_name=${encodeURIComponent(class_name)}&student_user_id=${encodeURIComponent(user_id)}&check_date=${encodeURIComponent(check_date)}&note=${encodeURIComponent(note)}&makeup_time=${encodeURIComponent(makeup)}`,{method:'POST'});
+                const d=await r.json();
+                if(d.ok){showToast('✅ '+(d.action||'备注已更新'));setTimeout(()=>location.reload(),500);}
+                else showToast('❌ 失败');
+            }catch(e){showToast('❌ 请求失败');}
+        }
+
+        async function resetData(){
+            if(!confirm('⚠️ 确定要清空所有考勤记录和通知日志吗？此操作不可恢复！')) return;
+            try{
+                const r=await fetch('/api/reset-data',{method:'POST'});
+                const d=await r.json();
+                if(d.ok){showToast('🗑️ 数据已清空');setTimeout(()=>location.reload(),800);}
+                else showToast(`❌ ${d.error}`);
+            }catch(e){showToast('❌ 请求失败');}
+        }
+    </script>
+    <style>
+        @keyframes spin { to { transform:rotate(360deg); } }
+    </style>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -9,7 +9,6 @@
 | 抖音 / 视频号内容分析工具包 | `douyin-analysis/` | Python · FastAPI · 爬虫 · OCR · ASR · ECharts | 美术赛道爆款内容抓取 + 五因子归因分析 + PDF 选题报告生成 |
 | 画室自动考勤通知系统 | `attendance/` | Python · FastAPI · APScheduler · 钉钉 Open API · 简道云 | 上课后自动拉取钉钉打卡，比对课表与名单，多渠道推送出勤状态 |
 | 月考成绩分析系统 | `grades-analysis/` | Python 标准库 · 简道云 · ECharts | 无框架单文件服务，实时拉取简道云成绩，排名 / 联考 / 趋势可视化 |
-| 技能商店爬虫 | `skill-store-crawler/` | Python · httpx | 技能商店 API 爬取与数据管理示例 |
 
 ## 隐私说明
 
@@ -24,4 +23,3 @@
 - [`douyin-analysis/README.md`](douyin-analysis/README.md)
 - [`attendance/README.md`](attendance/README.md)
 - [`grades-analysis/README.md`](grades-analysis/README.md)
-- [`skill-store-crawler/README.md`](skill-store-crawler/README.md)

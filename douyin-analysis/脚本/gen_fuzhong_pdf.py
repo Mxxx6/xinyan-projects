@@ -204,6 +204,6 @@ pdf.set_font("C","",6)
 pdf.set_y(-12)
 pdf.cell(W,6,"美院附中口播模版 | 4套2-3分钟脚本 | 2026真实数据 | "+datetime.now().strftime('%Y-%m-%d'),align="C")
 
-out="/Users/miao/Desktop/art/内容军火库/报告/美院附中口播模版.pdf"
+out="./内容军火库/报告/美院附中口播模版.pdf"
 pdf.output(out)
 print(f"Done: {out} ({pdf.pages_count} pages)")

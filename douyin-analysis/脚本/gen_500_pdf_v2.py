@@ -6,7 +6,7 @@ from datetime import datetime
 from collections import defaultdict
 from fpdf import FPDF
 
-with open("/Users/miao/Desktop/art/内容军火库/数据/art_500_results.json") as f:
+with open("./内容军火库/数据/art_500_results.json") as f:
     results = json.load(f)
 
 cn_font = None
@@ -152,6 +152,6 @@ pdf.set_font("C","",6)
 pdf.set_y(-10)
 pdf.cell(W,6,f"美术赛道500条 | {datetime.now().strftime('%Y-%m-%d')}",align="C")
 
-out="/Users/miao/Desktop/art/内容军火库/报告/美术赛道500条分析报告.pdf"
+out="./内容军火库/报告/美术赛道500条分析报告.pdf"
 pdf.output(out)
 print(f"Done: {out} ({pdf.pages_count} pages)")

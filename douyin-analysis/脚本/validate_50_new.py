@@ -347,7 +347,7 @@ for i, c in enumerate(cases):
     time.sleep(0.12)
 
 # Save
-with open("/Users/miao/Desktop/art/art_50_new_results.json", "w") as f:
+with open("./art_50_new_results.json", "w") as f:
     json.dump(results, f, ensure_ascii=False, indent=2)
 
 # Summary

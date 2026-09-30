@@ -8,7 +8,7 @@ from fpdf import FPDF
 
 import glob as _g
 
-f = max(_g.glob("/Users/miao/Desktop/art/内容军火库/数据/douyin_data/*.json"), key=os.path.getmtime)
+f = max(_g.glob("./内容军火库/数据/douyin_data/*.json"), key=os.path.getmtime)
 with open(f) as fp:
     data = json.load(fp)
 
@@ -223,6 +223,6 @@ pdf.set_font("C", "", 6)
 pdf.set_y(-12)
 pdf.cell(W, 6, "上平素描文案选题库 | 38条原创 | 竞品对标分析 | " + datetime.now().strftime("%Y-%m-%d"), align="C")
 
-out = "/Users/miao/Desktop/art/内容军火库/报告/上平素描视频数据报告.pdf"
+out = "./内容军火库/报告/上平素描视频数据报告.pdf"
 pdf.output(out)
 print(f"Done: {out} ({pdf.pages_count} pages)")

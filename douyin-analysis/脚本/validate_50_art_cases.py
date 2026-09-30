@@ -449,7 +449,7 @@ print(f"  核心发现: 赞粉比极高(>{'1000' if avg_fan_conv>1000 else '500'
 print(f"  第一驱动因子: 社交货币(分享传播) + 情绪触发(评论共鸣)")
 
 # ── Save results ──────────────────────────────────────────────────────
-with open("/Users/miao/Desktop/art/art_50_results.json", "w") as f:
+with open("./art_50_results.json", "w") as f:
     json.dump({
         "results": results,
         "niche_aggregation": {n: {
@@ -462,4 +462,4 @@ with open("/Users/miao/Desktop/art/art_50_results.json", "w") as f:
                     "score": r["overall_score"], "grade": r["grade"]} for i, r in enumerate(top10)],
     }, f, ensure_ascii=False, indent=2)
 
-print(f"\n✅ 结果已保存: /Users/miao/Desktop/art/art_50_results.json")
+print(f"\n✅ 结果已保存: ./art_50_results.json")

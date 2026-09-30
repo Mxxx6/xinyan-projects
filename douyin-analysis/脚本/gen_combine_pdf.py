@@ -191,6 +191,6 @@ pdf.set_font("C","",6)
 pdf.set_y(-12)
 pdf.cell(W,6,"美术生内容创作手册 | 整活拉流量 x 干货立信任 | " + datetime.now().strftime('%Y-%m-%d'),align="C")
 
-out="/Users/miao/Desktop/art/内容军火库/报告/美术生内容创作手册.pdf"
+out="./内容军火库/报告/美术生内容创作手册.pdf"
 pdf.output(out)
 print(f"Done: {out} ({pdf.pages_count} pages)")

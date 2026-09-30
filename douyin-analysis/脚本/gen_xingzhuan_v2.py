@@ -217,6 +217,6 @@ pdf.set_font("C","",6)
 pdf.set_y(-12)
 pdf.cell(W,6,"形转色变口播脚本V2 | 焚决x热梗 | 附上平素描原版文案 | "+datetime.now().strftime('%Y-%m-%d'),align="C")
 
-out="/Users/miao/Desktop/art/内容军火库/报告/形转色变口播脚本V2.pdf"
+out="./内容军火库/报告/形转色变口播脚本V2.pdf"
 pdf.output(out)
 print(f"Done: {out} ({pdf.pages_count} pages)")

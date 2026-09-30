@@ -163,6 +163,6 @@ pdf.set_font("C","",6)
 pdf.set_y(-12)
 pdf.cell(W,6,"口播赛道深度拆解 | 500条美术赛道数据 | 2026.07.20",align="C")
 
-out="/Users/miao/Desktop/art/内容军火库/报告/口播赛道深度拆解.pdf"
+out="./内容军火库/报告/口播赛道深度拆解.pdf"
 pdf.output(out)
 print(f"Done: {out} ({pdf.pages_count} pages)")

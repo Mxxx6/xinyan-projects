@@ -28,7 +28,7 @@
 ## 项目结构
 
 ```
-/Users/miao/Desktop/art/attendance/
+./attendance/
 ├── config.yaml              # 课表、API密钥、通知配置
 ├── main.py                  # FastAPI 入口 + APScheduler 启动
 ├── dingtalk/

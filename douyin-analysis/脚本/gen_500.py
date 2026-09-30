@@ -276,7 +276,7 @@ for i, c in enumerate(cases):
     time.sleep(0.05)
 
 # ── Save ──────────────────────────────────────────────────────────────
-with open("/Users/miao/Desktop/art/内容军火库/数据/art_500_results.json", "w") as f:
+with open("./内容军火库/数据/art_500_results.json", "w") as f:
     json.dump(results, f, ensure_ascii=False, indent=2)
 
 # ── Summary ────────────────────────────────────────────────────────────
